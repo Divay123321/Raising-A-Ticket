@@ -55,11 +55,22 @@ class _PendingApprovalView extends ConsumerWidget {
   }
 }
 
-class _DashboardContent extends ConsumerWidget {
+class _DashboardContent extends ConsumerStatefulWidget {
   const _DashboardContent();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DashboardContent> createState() => _DashboardContentState();
+}
+
+class _DashboardContentState extends ConsumerState<_DashboardContent> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.invalidate(dashboardStatsProvider));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final statsAsync = ref.watch(dashboardStatsProvider);
     final recentTicketsAsync = ref.watch(recentTicketsProvider);
 

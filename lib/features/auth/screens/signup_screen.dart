@@ -35,22 +35,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _isSubmitting = true;
       _errorMessage = null;
     });
+    ref.read(authTransitionInProgressProvider.notifier).state = true;
 
     try {
-      await ref.read(authServiceProvider).signUp(
+      await ref
+          .read(authServiceProvider)
+          .signUp(
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
-      // signUp() also signs the user in (that's how Firebase Auth's
-      // createUserWithEmailAndPassword works). We deliberately sign them
-      // back out immediately, since isActive is false — they shouldn't
-      // land inside the app yet.
       await ref.read(authServiceProvider).signOut();
       setState(() => _signupComplete = true);
     } catch (e) {
       setState(() => _errorMessage = 'Signup failed. Try a different email.');
     } finally {
+      ref.read(authTransitionInProgressProvider.notifier).state = false;
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
@@ -94,29 +94,40 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Create Account', style: Theme.of(context).textTheme.headlineSmall),
+                  Text(
+                    'Create Account',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                   const SizedBox(height: 24),
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(labelText: 'Full Name'),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Enter your name'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                    validator: (v) => (v == null || !v.contains('@'))
+                        ? 'Enter a valid email'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordController,
                     decoration: const InputDecoration(labelText: 'Password'),
                     obscureText: true,
-                    validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                    validator: (v) =>
+                        (v == null || v.length < 6) ? 'Min 6 characters' : null,
                   ),
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 12),
-                    Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   ],
                   const SizedBox(height: 20),
                   SizedBox(
@@ -124,7 +135,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     child: FilledButton(
                       onPressed: _isSubmitting ? null : _submit,
                       child: _isSubmitting
-                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Text('Sign Up'),
                     ),
                   ),
