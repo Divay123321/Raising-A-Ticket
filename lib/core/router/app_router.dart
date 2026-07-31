@@ -12,6 +12,8 @@ import '../../features/projects/screens/project_edit_loader.dart';
 import '../../features/employees/screens/employee_list_screen.dart';
 import '../../features/employees/screens/employee_detail_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
+import '../../features/tickets/screens/ticket_list_screen.dart';
+import '../../features/tickets/screens/ticket_form_screen.dart';
 
 class GoRouterRefreshNotifier extends ChangeNotifier {
   void refresh() => notifyListeners();
@@ -91,8 +93,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/tickets',
-            builder: (context, state) =>
-                const Placeholder(), // real screen: Day 7
+            builder: (context, state) => const TicketListScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const TicketFormScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                builder: (context, state) =>
+                    const Placeholder(), // detail screen: Day 8
+              ),
+            ],
           ),
         ],
       ),
