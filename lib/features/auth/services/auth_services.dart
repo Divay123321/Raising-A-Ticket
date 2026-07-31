@@ -6,8 +6,8 @@ class AuthService {
   final FirebaseFirestore _firestore;
 
   AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
@@ -37,8 +37,11 @@ class AuthService {
 
   Future<void> signOut() => _auth.signOut();
 
-  Future<Map<String, dynamic>?> fetchUserData(String uid) async {
-    final doc = await _firestore.collection('users').doc(uid).get();
-    return doc.data();
+  Stream<Map<String, dynamic>?> watchUserData(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((doc) => doc.data());
   }
 }

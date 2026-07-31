@@ -20,8 +20,16 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
   final results = await Future.wait([
     _safeCount(db, db.collection('projects')),
     _safeCount(db, db.collection('users')),
-    _safeCount(db, db.collection('tickets').where('status', isEqualTo: 'open')),
-    _safeCount(db, db.collection('tickets').where('status', isEqualTo: 'closed')),
+    _safeCount(
+      db,
+      db
+          .collection('tickets')
+          .where('status', whereIn: ['open', 'in_progress']),
+    ),
+    _safeCount(
+      db,
+      db.collection('tickets').where('status', whereIn: ['resolved', 'closed']),
+    ),
   ]);
 
   return DashboardStats(
@@ -33,8 +41,9 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
 });
 
 /// Raw recent tickets — kept as plain maps since the full Ticket model
-/// doesn't exist until Day 7. Returns empty list gracefully until then.
-final recentTicketsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final recentTicketsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   final db = ref.watch(firestoreProvider);
   try {
     final snapshot = await db
@@ -42,7 +51,9 @@ final recentTicketsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
         .orderBy('createdAt', descending: true)
         .limit(5)
         .get();
-    return snapshot.docs.map((d) => d.data()).toList();
+    return snapshot.docs
+        .map((d) => {'id': d.id, ...d.data()})
+        .toList(); // include the id now
   } catch (_) {
     return [];
   }

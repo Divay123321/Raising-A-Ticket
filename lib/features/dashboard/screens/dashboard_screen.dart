@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../providers/dashboard_providers.dart';
 import '../widgets/stat_card.dart';
@@ -162,6 +163,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                     child: ListTile(
                       title: Text(t['title'] as String? ?? 'Untitled'),
                       subtitle: Text(t['status'] as String? ?? ''),
+                      onTap: () => context.go('/tickets/${t['id']}'),
                     ),
                   );
                 }).toList(),

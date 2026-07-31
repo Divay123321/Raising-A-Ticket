@@ -4,6 +4,8 @@ import '../../../shared/enums/ticket_status.dart';
 import '../../../shared/enums/ticket_priority.dart';
 import '../models/ticket.dart';
 import '../services/ticket_service.dart';
+import '../models/ticket_comment.dart';
+import '../models/activity_entry.dart';
 
 final ticketServiceProvider = Provider<TicketService>((ref) {
   return TicketService(firestore: ref.watch(firestoreProvider));
@@ -38,4 +40,22 @@ final filteredTicketListProvider = Provider<AsyncValue<List<Ticket>>>((ref) {
       return matchesQuery && matchesStatus && matchesPriority && matchesProject;
     }).toList();
   });
+});
+final ticketCommentsProvider = StreamProvider.family<List<TicketComment>, String>((ref, ticketId) {
+  return ref.watch(ticketServiceProvider).watchComments(ticketId);
+});
+
+final ticketActivityProvider = StreamProvider.family<List<ActivityEntry>, String>((ref, ticketId) {
+  return ref.watch(ticketServiceProvider).watchActivity(ticketId);
+});
+
+/// Users eligible for ticket assignment: active Engineers.
+final activeEngineersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final db = ref.watch(firestoreProvider);
+  final snapshot = await db
+      .collection('users')
+      .where('role', isEqualTo: 'engineer')
+      .where('isActive', isEqualTo: true)
+      .get();
+  return snapshot.docs.map((d) => {'uid': d.id, ...d.data()}).toList();
 });

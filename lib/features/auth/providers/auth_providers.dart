@@ -13,15 +13,16 @@ final authStateProvider = StreamProvider<User?>((ref) {
 });
 final authTransitionInProgressProvider = StateProvider<bool>((ref) => false);
 
-final currentUserProvider = FutureProvider<AppUser?>((ref) async {
+// auth_providers.dart — currentUserProvider becomes a StreamProvider
+final currentUserProvider = StreamProvider<AppUser?>((ref) {
   final authState = ref.watch(authStateProvider);
-
   final firebaseUser = authState.value;
-  if (firebaseUser == null) return null;
+  if (firebaseUser == null) return Stream.value(null);
 
-  final data = await ref
+  return ref
       .watch(authServiceProvider)
-      .fetchUserData(firebaseUser.uid);
-  if (data == null) return null;
-  return AppUser.fromMap(firebaseUser.uid, data);
+      .watchUserData(firebaseUser.uid)
+      .map(
+        (data) => data == null ? null : AppUser.fromMap(firebaseUser.uid, data),
+      );
 });
