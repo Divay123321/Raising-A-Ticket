@@ -14,6 +14,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
 
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -22,6 +23,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -34,13 +36,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authServiceProvider).signIn(
+      await ref
+          .read(authServiceProvider)
+          .signIn(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
       // No manual navigation here — once sign-in succeeds, authStateProvider
       // fires, currentUserProvider refetches, and the router redirect
-      // (added next) sends the user to '/' automatically.
+      // sends the user to '/' automatically.
     } catch (e) {
       setState(() => _errorMessage = 'Login failed. Check your credentials.');
     } finally {
@@ -61,23 +65,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Filoi Operations Portal', style: Theme.of(context).textTheme.headlineSmall),
+                  Text(
+                    'Filoi Operations Portal',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                   const SizedBox(height: 24),
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                    validator: (v) => (v == null || !v.contains('@'))
+                        ? 'Enter a valid email'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordController,
+                    focusNode: _passwordFocusNode,
                     decoration: const InputDecoration(labelText: 'Password'),
                     obscureText: true,
-                    validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
+                    validator: (v) =>
+                        (v == null || v.length < 6) ? 'Min 6 characters' : null,
                   ),
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 12),
-                    Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   ],
                   const SizedBox(height: 20),
                   SizedBox(
@@ -85,7 +103,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: FilledButton(
                       onPressed: _isSubmitting ? null : _submit,
                       child: _isSubmitting
-                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Text('Sign In'),
                     ),
                   ),

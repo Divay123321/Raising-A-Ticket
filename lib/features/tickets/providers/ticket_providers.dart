@@ -45,8 +45,9 @@ final filteredTicketListProvider = Provider<AsyncValue<List<Ticket>>>((ref) {
   if (ticketsAsync is AsyncLoading || managedProjectIdsAsync is AsyncLoading) {
     return const AsyncValue.loading();
   }
-  if (ticketsAsync.hasError)
+  if (ticketsAsync.hasError) {
     return AsyncValue.error(ticketsAsync.error!, ticketsAsync.stackTrace!);
+  }
 
   final tickets = ticketsAsync.value ?? [];
   final managedProjectIds = managedProjectIdsAsync.value ?? {};

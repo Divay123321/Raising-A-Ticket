@@ -117,10 +117,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(labelText: 'Password'),
-                    obscureText: true,
-                    validator: (v) =>
-                        (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      helperText:
+                          'At least 8 characters, with a letter and a number',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Required';
+                      if (v.length < 8) return 'Must be at least 8 characters';
+                      if (!v.contains(RegExp(r'[A-Za-z]'))) {
+                        return 'Must contain at least one letter';
+                      }
+                      if (!v.contains(RegExp(r'[0-9]'))) {
+                        return 'Must contain at least one number';
+                      }
+                      return null;
+                    },
                   ),
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 12),
