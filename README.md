@@ -17,6 +17,19 @@ This is a portfolio/internship project, **not** an attempt to recreate any real 
 
 ---
 
+## Features
+
+- **Authentication** — signup/login, Admin-gated account activation, password strength validation, Enter-to-submit forms.
+- **Dashboard** — company-wide stats (Projects, Employees, Open/Closed Tickets), a role-aware 5th "My Tickets" card for Engineers, a ticket status chart, and a role-scoped Recent Tickets feed.
+- **Projects** — searchable/filterable list, Admin-only creation, edit restricted to Admin or the assigned Manager, no deletion (projects are marked `Completed` instead — see Design Decisions).
+- **Employees** — Admin-only directory built directly on the `users` collection (no separate schema); role assignment, account activation, and a skills tag editor.
+- **Tickets** — the core feature: searchable/filterable list (role-scoped visibility), full create/edit, dedicated Assign Engineer and Change Status actions, a comment thread, and a visual Activity Timeline logging every mutation automatically.
+- **Security** — every permission is enforced server-side via Firestore Security Rules, including field-level restrictions (e.g. an Engineer can change a ticket's status but not its title), not just hidden UI buttons.
+- **Resilience** — Firebase Web's auth-token propagation timing gap is handled with automatic silent retries on live data streams, and manual Retry actions surface if a genuine issue persists.
+- **Automated tests** — service-layer unit tests using `fake_cloud_firestore`, covering ticket creation, status changes, and activity-log side effects.
+
+---
+
 ## Architecture
 
 Four-layer separation, feature-first folder structure:
@@ -39,37 +52,57 @@ Nothing outside `services/` imports `cloud_firestore` or `firebase_auth` directl
 lib/
 ├── main.dart
 ├── core/
-│   ├── providers/        # firestoreProvider (shared Firebase DI)
+│   ├── providers/        # firestoreProvider (shared Firebase DI, points at the "filoi" database)
 │   ├── router/            # go_router config + auth-aware redirect guard
 │   ├── theme/              # Material 3 theme
-│   └── widgets/            # AppShell (sidebar + persistent layout)
+│   ├── utils/               # withRetry — shared Firestore stream retry helper
+│   └── widgets/            # AppShell (role-aware sidebar + persistent layout)
 ├── shared/
 │   └── enums/               # UserRole, ProjectStatus, TicketStatus, TicketPriority
 └── features/
-    ├── auth/                  # models, services, providers, screens
+    ├── auth/                  # AppUser model, AuthService, providers, Login/Signup screens
     ├── dashboard/          # stats providers, screens, widgets
-    ├── projects/             # CRUD: models, services, providers, screens, widgets
-    ├── employees/           # (in progress)
-    └── tickets/                # (in progress)
+    ├── projects/             # CRUD, list/detail/form screens, providers, widgets
+    ├── employees/           # directory + activation, backed by the users collection
+    └── tickets/                # CRUD, comments + activity subcollections, providers, widgets
+
+test/
+└── features/tickets/       # TicketService unit tests (fake_cloud_firestore)
 ```
 
 ---
 
 ## Roles & Permissions
 
-Three internal roles: **Admin**, **Project Manager**, **Engineer**. There is no external/client-facing account — clients report issues to their Project Manager, who logs tickets on their behalf.
+Three internal roles: **Admin**, **Project Manager**, **Engineer**. There is no external/client-facing account — clients report issues to their Project Manager (or whichever employee fields the call/email), who logs tickets on their behalf via the optional `reportedBy` field.
 
-Role enforcement is **Firestore-only** (no Cloud Functions): a `role` field lives on each user's `users/{uid}` document, and Firestore Security Rules independently verify it server-side before allowing writes — a client can never self-promote its own role.
+Role enforcement is **Firestore-only** (no Cloud Functions): a `role` field lives on each user's `users/{uid}` document, and Firestore Security Rules independently verify it server-side before allowing writes — a client can never self-promote its own role. Several rules also enforce **field-level** restrictions (e.g. an assigned Engineer can change a ticket's `status` but not its `title`/`description`) using Firestore's `diff().affectedKeys()` mechanism.
 
-New signups default to `role: engineer`, `isActive: false`. An Admin must activate the account (and optionally change the role) before the user can access the app.
+New signups default to `role: engineer`, `isActive: false`. An Admin must activate the account (and assign the real role) via the Employees screen before the user can access the app.
 
 | Action | Who |
 |---|---|
-| View projects/tickets | Any active authenticated user |
-| Create/edit/delete projects | Admin, Project Manager |
-| Create tickets | Any active authenticated user |
-| Assign engineer / delete ticket | Admin, Project Manager (delete: Admin only) |
-| Manage employees, activate accounts | Admin only |
+| Create a project | Admin only |
+| Edit a project | Admin, or the project's assigned Manager |
+| Delete a project | **Nobody** — projects are never deleted (see Design Decisions) |
+| Reassign a project's Manager | Admin only |
+| Create a ticket | Any active authenticated user, for any project |
+| Edit ticket title/description/priority | Ticket creator, Admin, Project Manager |
+| Assign an engineer to a ticket | Admin, Project Manager |
+| Change a ticket's status | Admin, Project Manager, or the ticket's assigned Engineer |
+| Delete a ticket | Admin only |
+| Comment on a ticket | Any active authenticated user |
+| Manage employees, activate accounts, assign roles | Admin only |
+
+### Ticket & Project Visibility Scoping
+
+Beyond write permissions, *what each role sees* in the Tickets list (and Dashboard's Recent Tickets) is also scoped:
+
+- **Admin** — sees all tickets and projects, unrestricted.
+- **Project Manager** — sees only tickets belonging to project(s) they manage.
+- **Engineer** — sees only tickets assigned to them.
+
+This keeps each role's view focused on their actual scope of responsibility, while Admin retains full oversight.
 
 ---
 
@@ -99,14 +132,20 @@ New signups default to `role: engineer`, `isActive: false`. An Admin must activa
 
 4. Publish the security rules from `firestore.rules` (in this repo) via the Firestore Console's **Rules** tab.
 
-   > Note: if your Firestore database was created with a non-default database ID (Firebase now supports multiple named databases per project), update `lib/core/providers/firebase_providers.dart` to point at the correct `databaseId`.
+   > Note: this project's Firestore database is named `filoi`, not the standard `(default)`. `lib/core/providers/firebase_providers.dart` points at that database ID explicitly — update it if your own database uses a different ID.
 
 5. Run the app:
    ```bash
    flutter run -d chrome
    ```
 
-6. **Bootstrap your first Admin account**: sign up normally through the app, then manually edit your user document in the Firestore Console — set `role` to `"admin"` and `isActive` to `true`. Every subsequent user can be activated properly through the app's Employee Management screen.
+6. **Bootstrap your first Admin account**: sign up normally through the app, then manually edit your user document in the Firestore Console — set `role` to `"admin"` and `isActive` to `true`. Every subsequent user can be activated properly through the app's Employees screen.
+
+### Running tests
+
+```bash
+flutter test
+```
 
 ---
 
@@ -114,13 +153,14 @@ New signups default to `role: engineer`, `isActive: false`. An Admin must activa
 
 | Module | Status |
 |---|---|
-| Authentication (signup, login, role-based routing) | ✅ Complete |
-| Dashboard (stats, chart, recent tickets) | ✅ Complete |
-| Projects (CRUD, search, filter) | ✅ Complete |
-| Project detail / edit | 🚧 In progress |
-| Employees | ⬜ Planned |
-| Tickets (core feature: CRUD, comments, activity timeline) | ⬜ Planned |
-| Testing | ⬜ Planned |
+| Authentication (signup, login, role-based routing, password validation) | ✅ Complete |
+| Dashboard (stats, chart, recent tickets, role-scoped "My Tickets") | ✅ Complete |
+| Projects (list/detail/edit, Admin-gated create, no delete) | ✅ Complete |
+| Employees (directory, activation, role/skills management) | ✅ Complete |
+| Tickets (CRUD, assignment, status, comments, activity timeline) | ✅ Complete |
+| Automated tests | ✅ Core service coverage complete |
+| Manual QA pass (all three roles) | ✅ Complete |
+| Deployment |  ✅ Complete |
 
 ---
 
@@ -129,3 +169,12 @@ New signups default to `role: engineer`, `isActive: false`. An Admin must activa
 - **Denormalized display fields** (e.g. `managerName` on a project, `projectName`/`assignedEngineerName` on a ticket) — Firestore has no joins, so names needed for table/list display are stored alongside the reference ID to avoid N+1 reads. Traded off against staleness if a user's name changes, which is rare enough in an internal tool to be an acceptable tradeoff.
 - **Comments and activity log as subcollections** of `tickets/{id}`, not arrays on the ticket document — avoids the 1MB document cap and allows independent pagination.
 - **Dashboard counts** use Firestore's aggregate `.count()` queries rather than a maintained stats document, avoiding a class of "aggregate doc out of sync" bugs at the cost of slightly more read operations — an acceptable tradeoff at this app's scale.
+- **Projects are never deleted.** Every ticket references a project by ID; deleting a project would orphan its tickets' historical references. A project that's finished simply moves to `Completed` status instead, preserving a permanent record.
+- **Firebase Web auth-token propagation gap.** Right after login (or a background token refresh), Firestore reads can briefly fail even though the security rules would correctly allow them a moment later. A shared `withRetry()` helper wraps every live Firestore stream with a short, silent retry (up to ~3 attempts) before surfacing a real error with a manual Retry action — avoiding both a confusing false error on login and an infinite silent retry that would mask a genuine problem.
+
+## Possible Future Improvements
+
+Deliberately out of scope for this build, but natural next steps for a production version:
+- **OAuth (Google Sign-In)** — would remove password management entirely; held off given the setup/testing risk this late in the build.
+- **A "viewed/edited by" audit trail on Projects and Employees**, mirroring the Ticket Activity Timeline.
+- **Cloud Functions-backed custom claims** for role enforcement, instead of Firestore-only rules — more tamper-resistant, at the cost of added infrastructure.
