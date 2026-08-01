@@ -88,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
                     validator: (v) =>
-                        (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                        (v == null || v.length < 8) ? 'Min 8 characters' : null,
                   ),
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 12),
