@@ -188,16 +188,73 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
               if (tickets.isEmpty) {
                 return const Text(
                   'No tickets yet.',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: AppColors.slate),
                 );
               }
               return Column(
                 children: tickets.map((t) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(t['title'] as String? ?? 'Untitled'),
-                      subtitle: Text(t['status'] as String? ?? ''),
-                      onTap: () => context.go('/tickets/${t['id']}'),
+                  final status = t['status'] as String? ?? '';
+                  final statusColor = switch (status) {
+                    'open' => const Color(0xFFEA580C),
+                    'in_progress' => AppColors.teal,
+                    'resolved' => Colors.blue,
+                    'closed' => const Color(0xFF16A34A),
+                    _ => AppColors.slate,
+                  };
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () => context.go('/tickets/${t['id']}'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  t['title'] as String? ?? 'Untitled',
+                                  style: const TextStyle(
+                                    color: AppColors.ink,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right,
+                                color: Colors.grey.shade400,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 }).toList(),

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/enums/ticket_status.dart';
 import '../../../shared/enums/ticket_priority.dart';
+import '../../../shared/widgets/lists/search_field.dart';
+import '../../../shared/widgets/lists/filter_dropdown.dart';
+import '../../../shared/widgets/lists/error_state.dart';
+import '../../../shared/widgets/lists/list_row_card.dart';
 import '../../projects/providers/project_providers.dart';
 import '../providers/ticket_providers.dart';
 import '../widgets/ticket_priority_chip.dart';
@@ -23,11 +28,24 @@ class TicketListScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('Tickets', style: Theme.of(context).textTheme.headlineSmall),
+              const Text(
+                'Tickets',
+                style: TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const Spacer(),
               FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.teal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 onPressed: () => context.go('/tickets/new'),
-                icon: const Icon(Icons.add),
+                icon: const Icon(Icons.add, size: 18),
                 label: const Text('New Ticket'),
               ),
             ],
@@ -37,13 +55,8 @@ class TicketListScreen extends ConsumerWidget {
             children: [
               Expanded(
                 flex: 2,
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search by title...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                child: SearchField(
+                  hint: 'Search by title...',
                   onChanged: (value) =>
                       ref.read(ticketSearchQueryProvider.notifier).state =
                           value,
@@ -51,13 +64,9 @@ class TicketListScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: DropdownButtonFormField<TicketStatus?>(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                child: FilterDropdown<TicketStatus?>(
                   value: ref.watch(ticketStatusFilterProvider),
-                  hint: const Text('All statuses'),
+                  hint: 'All statuses',
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -74,13 +83,9 @@ class TicketListScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: DropdownButtonFormField<TicketPriority?>(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                child: FilterDropdown<TicketPriority?>(
                   value: ref.watch(ticketPriorityFilterProvider),
-                  hint: const Text('All priorities'),
+                  hint: 'All priorities',
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -100,13 +105,9 @@ class TicketListScreen extends ConsumerWidget {
                 child: projectsAsync.when(
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
-                  data: (projects) => DropdownButtonFormField<String?>(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
+                  data: (projects) => FilterDropdown<String?>(
                     value: ref.watch(ticketProjectFilterProvider),
-                    hint: const Text('All projects'),
+                    hint: 'All projects',
                     items: [
                       const DropdownMenuItem(
                         value: null,
@@ -129,57 +130,40 @@ class TicketListScreen extends ConsumerWidget {
           Expanded(
             child: ticketsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Failed to load tickets: $err'),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => ref.invalidate(ticketListProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              error: (err, stack) => ErrorState(
+                message: 'Failed to load tickets: $err',
+                onRetry: () => ref.invalidate(ticketListProvider),
               ),
               data: (tickets) {
                 if (tickets.isEmpty) {
                   return const Center(
                     child: Text(
                       'No tickets found.',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppColors.slate),
                     ),
                   );
                 }
-                return SingleChildScrollView(
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Title')),
-                      DataColumn(label: Text('Project')),
-                      DataColumn(label: Text('Engineer')),
-                      DataColumn(label: Text('Priority')),
-                      DataColumn(label: Text('Status')),
-                    ],
-                    rows: tickets.map((ticket) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(ticket.title),
-                            onTap: () => context.go('/tickets/${ticket.id}'),
-                          ),
-                          DataCell(Text(ticket.projectName)),
-                          DataCell(
-                            Text(ticket.assignedEngineerName ?? 'Unassigned'),
-                          ),
-                          DataCell(
-                            TicketPriorityChip(priority: ticket.priority),
-                          ),
-                          DataCell(TicketStatusChip(status: ticket.status)),
+                return ListView.separated(
+                  itemCount: tickets.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final ticket = tickets[index];
+                    return ListRowCard(
+                      icon: Icons.confirmation_number_outlined,
+                      title: ticket.title,
+                      subtitle:
+                          '${ticket.projectName} · ${ticket.assignedEngineerName ?? "Unassigned"}',
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TicketPriorityChip(priority: ticket.priority),
+                          const SizedBox(width: 6),
+                          TicketStatusChip(status: ticket.status),
                         ],
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                      onTap: () => context.go('/tickets/${ticket.id}'),
+                    );
+                  },
                 );
               },
             ),

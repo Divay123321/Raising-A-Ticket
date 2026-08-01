@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/enums/user_role.dart';
+import '../../../shared/widgets/lists/search_field.dart';
+import '../../../shared/widgets/lists/filter_dropdown.dart';
+import '../../../shared/widgets/lists/error_state.dart';
+import '../../../shared/widgets/lists/list_row_card.dart';
 import '../providers/employee_providers.dart';
 
 class EmployeeListScreen extends ConsumerWidget {
@@ -16,33 +21,31 @@ class EmployeeListScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Employees', style: Theme.of(context).textTheme.headlineSmall),
+          const Text(
+            'Employees',
+            style: TextStyle(
+              color: AppColors.ink,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 flex: 2,
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search by name...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                child: SearchField(
+                  hint: 'Search by name...',
                   onChanged: (value) =>
                       ref.read(employeeSearchQueryProvider.notifier).state =
                           value,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: DropdownButtonFormField<UserRole?>(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                child: FilterDropdown<UserRole?>(
                   value: ref.watch(employeeRoleFilterProvider),
-                  hint: const Text('All roles'),
+                  hint: 'All roles',
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -63,82 +66,62 @@ class EmployeeListScreen extends ConsumerWidget {
           Expanded(
             child: employeesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Failed to load employees: $err'),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => ref.invalidate(employeeListProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              error: (err, stack) => ErrorState(
+                message: 'Failed to load employees: $err',
+                onRetry: () => ref.invalidate(employeeListProvider),
               ),
               data: (employees) {
                 if (employees.isEmpty) {
                   return const Center(
                     child: Text(
                       'No employees found.',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppColors.slate),
                     ),
                   );
                 }
-                return SingleChildScrollView(
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Name')),
-                      DataColumn(label: Text('Email')),
-                      DataColumn(label: Text('Role')),
-                      DataColumn(label: Text('Status')),
-                    ],
-                    rows: employees.map((employee) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(employee.name),
-                            onTap: () =>
-                                context.go('/employees/${employee.uid}'),
-                          ),
-                          DataCell(Text(employee.email)),
-                          DataCell(Text(employee.role.label)),
-                          DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    (employee.isActive
-                                            ? Colors.green
-                                            : Colors.orange)
-                                        .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                employee.isActive ? 'Active' : 'Pending',
-                                style: TextStyle(
-                                  color: employee.isActive
-                                      ? Colors.green
-                                      : Colors.orange,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                return ListView.separated(
+                  itemCount: employees.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final employee = employees[index];
+                    return ListRowCard(
+                      icon: Icons.person_outline,
+                      title: employee.name,
+                      subtitle: '${employee.email} · ${employee.role.label}',
+                      trailing: _StatusBadge(isActive: employee.isActive),
+                      onTap: () => context.go('/employees/${employee.uid}'),
+                    );
+                  },
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final bool isActive;
+  const _StatusBadge({required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? const Color(0xFF16A34A) : const Color(0xFFEA580C);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        isActive ? 'Active' : 'Pending',
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
       ),
     );
   }

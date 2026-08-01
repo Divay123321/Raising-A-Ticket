@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/auth/providers/auth_providers.dart';
-import '../../shared/enums/user_role.dart';
-import '../theme/app_colors.dart';
+import '../../../features/auth/providers/auth_providers.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../enums/user_role.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;

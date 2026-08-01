@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
-import '../widgets/app_shell.dart';
+import '../../shared/widgets/navigation/app_shell.dart';
 import 'package:flutter/material.dart';
 import '../../features/projects/screens/project_list_screen.dart';
 import '../../features/projects/screens/project_form_screen.dart';

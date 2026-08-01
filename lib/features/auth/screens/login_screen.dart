@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/auth_brand_panel.dart';
-import '../../../core/widgets/auth_text_field_decoration.dart';
+import '../../../shared/widgets/auth/auth_brand_panel.dart';
+import '../../../shared/widgets/auth/auth_text_field_decoration.dart';
 import '../providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {

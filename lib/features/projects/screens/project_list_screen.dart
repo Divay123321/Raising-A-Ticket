@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/lists/search_field.dart';
+import '../../../shared/widgets/lists/filter_dropdown.dart';
+import '../../../shared/widgets/lists/error_state.dart';
+import '../../../shared/widgets/lists/list_row_card.dart';
 import '../../../shared/enums/project_status.dart';
 import '../../../shared/enums/user_role.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -23,15 +28,25 @@ class ProjectListScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text(
+              const Text(
                 'Projects',
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const Spacer(),
               if (isAdmin)
                 FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.teal,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   onPressed: () => context.go('/projects/new'),
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add, size: 18),
                   label: const Text('New Project'),
                 ),
             ],
@@ -41,27 +56,18 @@ class ProjectListScreen extends ConsumerWidget {
             children: [
               Expanded(
                 flex: 2,
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search by project name...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                child: SearchField(
+                  hint: 'Search by project name...',
                   onChanged: (value) =>
                       ref.read(projectSearchQueryProvider.notifier).state =
                           value,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: DropdownButtonFormField<ProjectStatus?>(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                child: FilterDropdown<ProjectStatus?>(
                   value: ref.watch(projectStatusFilterProvider),
-                  hint: const Text('All statuses'),
+                  hint: 'All statuses',
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -82,51 +88,32 @@ class ProjectListScreen extends ConsumerWidget {
           Expanded(
             child: projectsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Failed to load projects: $err'),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => ref.invalidate(projectListProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              error: (err, stack) => ErrorState(
+                message: 'Failed to load projects: $err',
+                onRetry: () => ref.invalidate(projectListProvider),
               ),
               data: (projects) {
                 if (projects.isEmpty) {
                   return const Center(
                     child: Text(
                       'No projects found.',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppColors.slate),
                     ),
                   );
                 }
-                return SingleChildScrollView(
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Name')),
-                      DataColumn(label: Text('Client')),
-                      DataColumn(label: Text('Manager')),
-                      DataColumn(label: Text('Status')),
-                    ],
-                    rows: projects.map((project) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(project.name),
-                            onTap: () => context.go('/projects/${project.id}'),
-                          ),
-                          DataCell(Text(project.client)),
-                          DataCell(Text(project.managerName)),
-                          DataCell(ProjectStatusChip(status: project.status)),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                return ListView.separated(
+                  itemCount: projects.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final project = projects[index];
+                    return ListRowCard(
+                      icon: Icons.folder_outlined,
+                      title: project.name,
+                      subtitle: '${project.client} · ${project.managerName}',
+                      trailing: ProjectStatusChip(status: project.status),
+                      onTap: () => context.go('/projects/${project.id}'),
+                    );
+                  },
                 );
               },
             ),
