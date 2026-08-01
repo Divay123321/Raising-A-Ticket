@@ -6,6 +6,7 @@ import '../../auth/providers/auth_providers.dart';
 import '../providers/dashboard_providers.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/ticket_status_chart.dart';
+import '../../../core/theme/app_colors.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -97,6 +98,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                     label: 'Projects',
                     value: stats.projectCount,
                     icon: Icons.folder_outlined,
+                    accentColor: AppColors.teal,
                   ),
                 ),
                 SizedBox(
@@ -105,6 +107,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                     label: 'Employees',
                     value: stats.employeeCount,
                     icon: Icons.people_outline,
+                    accentColor: AppColors.ink,
                   ),
                 ),
                 SizedBox(
@@ -113,6 +116,9 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                     label: 'Open Tickets',
                     value: stats.openTicketCount,
                     icon: Icons.error_outline,
+                    accentColor: const Color(
+                      0xFFEA580C,
+                    ), // warm amber — "needs attention"
                   ),
                 ),
                 SizedBox(
@@ -121,6 +127,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                     label: 'Closed Tickets',
                     value: stats.closedTicketCount,
                     icon: Icons.check_circle_outline,
+                    accentColor: const Color(0xFF16A34A), // green — "resolved"
                   ),
                 ),
                 Consumer(
@@ -143,6 +150,7 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                           label: 'My Tickets',
                           value: count,
                           icon: Icons.assignment_ind_outlined,
+                          accentColor: AppColors.teal,
                         ),
                       ),
                     );

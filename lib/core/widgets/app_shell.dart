@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../shared/enums/user_role.dart';
+import '../theme/app_colors.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -15,70 +16,168 @@ class AppShell extends ConsumerWidget {
     final isAdmin = userAsync.value?.role == UserRole.admin;
     final currentPath = GoRouterState.of(context).matchedLocation;
 
-    final routes = ['/', '/projects', if (isAdmin) '/employees', '/tickets'];
+    final navItems = [
+      _NavItem('/', 'Dashboard', Icons.dashboard_outlined),
+      _NavItem('/projects', 'Projects', Icons.folder_outlined),
+      if (isAdmin) _NavItem('/employees', 'Employees', Icons.people_outline),
+      _NavItem('/tickets', 'Tickets', Icons.confirmation_number_outlined),
+    ];
 
-    int selectedIndex = routes.indexWhere(
-      (r) => r != '/' && currentPath.startsWith(r),
+    final selectedIndex = navItems.indexWhere(
+      (item) => item.path != '/' && currentPath.startsWith(item.path),
     );
-    if (selectedIndex == -1) selectedIndex = 0;
+    final effectiveIndex = selectedIndex == -1 ? 0 : selectedIndex;
 
     return Scaffold(
       body: Row(
         children: [
-          NavigationDrawer(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: (index) => context.go(routes[index]),
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Filoi Ops Portal',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ),
-              userAsync.when(
-                data: (user) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+          Container(
+            width: 240,
+            color: AppColors.ink,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 28, 20, 4),
                   child: Text(
-                    user?.name ?? '',
-                    style: const TextStyle(color: Colors.grey),
+                    'FILOI',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 3,
+                    ),
                   ),
                 ),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-              const Divider(),
-              const NavigationDrawerDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                label: Text('Dashboard'),
-              ),
-              const NavigationDrawerDestination(
-                icon: Icon(Icons.folder_outlined),
-                label: Text('Projects'),
-              ),
-              if (isAdmin)
-                const NavigationDrawerDestination(
-                  icon: Icon(Icons.people_outline),
-                  label: Text('Employees'),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Text(
+                    'OPS PORTAL',
+                    style: TextStyle(
+                      color: AppColors.teal,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 2,
+                    ),
+                  ),
                 ),
-              const NavigationDrawerDestination(
-                icon: Icon(Icons.confirmation_number_outlined),
-                label: Text('Tickets'),
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text('Sign out'),
-                onTap: () => ref.read(authServiceProvider).signOut(),
-              ),
-            ],
+                userAsync.when(
+                  data: (user) => Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    child: Text(
+                      user?.name ?? '',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+                const SizedBox(height: 8),
+                ...navItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final isSelected = index == effectiveIndex;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 2,
+                    ),
+                    child: Material(
+                      color: isSelected
+                          ? AppColors.teal.withValues(alpha: 0.15)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => context.go(item.path),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                item.icon,
+                                size: 20,
+                                color: isSelected
+                                    ? AppColors.teal
+                                    : Colors.white.withValues(alpha: 0.7),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                item.label,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? AppColors.teal
+                                      : Colors.white.withValues(alpha: 0.85),
+                                  fontSize: 14,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const Spacer(),
+                Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => ref.read(authServiceProvider).signOut(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.logout,
+                              size: 20,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Sign out',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           Expanded(child: child),
         ],
       ),
     );
   }
+}
+
+class _NavItem {
+  final String path;
+  final String label;
+  final IconData icon;
+  const _NavItem(this.path, this.label, this.icon);
 }
