@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../models/dashboard_stats.dart';
+import 'package:filoi/features/auth/providers/auth_providers.dart';
+import '../../../shared/enums/user_role.dart';
 
 /// Runs a Firestore aggregate count query, returning 0 if the collection
 /// doesn't exist yet or rules currently deny it (both expected pre-Day-4/7).
@@ -41,20 +43,49 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
 });
 
 /// Raw recent tickets — kept as plain maps since the full Ticket model
+// dashboard_providers.dart
 final recentTicketsProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) async {
   final db = ref.watch(firestoreProvider);
+  final currentUser = ref.watch(currentUserProvider).value;
+  if (currentUser == null) return [];
+
+  try {
+    Query<Map<String, dynamic>> query = db
+        .collection('tickets')
+        .orderBy('createdAt', descending: true);
+
+    // Engineers only see tickets assigned to them; Admin/PM see everything.
+    if (currentUser.role == UserRole.engineer) {
+      query = db
+          .collection('tickets')
+          .where('assignedEngineerUid', isEqualTo: currentUser.uid)
+          .orderBy('createdAt', descending: true);
+    }
+
+    final snapshot = await query.limit(5).get();
+    return snapshot.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+  } catch (_) {
+    return [];
+  }
+});
+
+// dashboard_providers.dart — add this provider
+final myTicketCountProvider = FutureProvider<int>((ref) async {
+  final currentUser = ref.watch(currentUserProvider).value;
+  if (currentUser == null) return 0;
+
+  final db = ref.watch(firestoreProvider);
   try {
     final snapshot = await db
         .collection('tickets')
-        .orderBy('createdAt', descending: true)
-        .limit(5)
+        .where('assignedEngineerUid', isEqualTo: currentUser.uid)
+        .where('status', whereIn: ['open', 'in_progress'])
+        .count()
         .get();
-    return snapshot.docs
-        .map((d) => {'id': d.id, ...d.data()})
-        .toList(); // include the id now
+    return snapshot.count ?? 0;
   } catch (_) {
-    return [];
+    return 0;
   }
 });

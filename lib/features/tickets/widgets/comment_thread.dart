@@ -43,6 +43,12 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
           .read(ticketServiceProvider)
           .addComment(widget.ticketId, comment);
       _commentController.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send comment: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSending = false);
     }

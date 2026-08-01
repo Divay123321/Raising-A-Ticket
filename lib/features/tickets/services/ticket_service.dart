@@ -91,15 +91,14 @@ class TicketService {
   }
 
   // --- Comments subcollection ---
-
-  Stream<List<TicketComment>> watchComments(String ticketId) => withRetry(
-        () => _collection
-            .doc(ticketId)
-            .collection('comments')
-            .orderBy('createdAt', descending: false)
-            .snapshots()
-            .map((snapshot) => snapshot.docs.map((doc) => TicketComment.fromMap(doc.id, doc.data())).toList()),
-      );
+Stream<List<TicketComment>> watchComments(String ticketId) => withRetry(
+      () => _collection
+          .doc(ticketId)
+          .collection('comments')
+          .orderBy('createdAt', descending: false)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.map((doc) => TicketComment.fromMap(doc.id, doc.data())).toList()),
+    );
 
   Future<void> addComment(String ticketId, TicketComment comment) async {
     final data = comment.toMap();

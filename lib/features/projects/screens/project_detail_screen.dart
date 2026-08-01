@@ -14,18 +14,35 @@ class ProjectDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projectAsync = ref.watch(projectByIdProvider(projectId));
     final userAsync = ref.watch(currentUserProvider);
-    final canManage = userAsync.value?.role == UserRole.admin || userAsync.value?.role == UserRole.projectManager;
-    final isAdmin = userAsync.value?.role == UserRole.admin;
+    final currentUser = userAsync.value;
 
     return Padding(
       padding: const EdgeInsets.all(24),
       child: projectAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Failed to load project: $err')),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Failed to load project: $err'),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => ref.invalidate(projectByIdProvider(projectId)),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
         data: (project) {
           if (project == null) {
             return const Center(child: Text('Project not found.'));
           }
+
+          final canManage =
+              currentUser?.role == UserRole.admin ||
+              currentUser?.uid == project.managerUid;
+
           return ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Column(
@@ -38,7 +55,10 @@ class ProjectDetailScreen extends ConsumerWidget {
                       onPressed: () => context.go('/projects'),
                     ),
                     Expanded(
-                      child: Text(project.name, style: Theme.of(context).textTheme.headlineSmall),
+                      child: Text(
+                        project.name,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
                     ),
                     ProjectStatusChip(status: project.status),
                   ],
@@ -48,56 +68,26 @@ class ProjectDetailScreen extends ConsumerWidget {
                 _DetailRow(label: 'Manager', value: project.managerName),
                 _DetailRow(
                   label: 'Description',
-                  value: project.description.isEmpty ? '—' : project.description,
+                  value: project.description.isEmpty
+                      ? '—'
+                      : project.description,
                 ),
                 const SizedBox(height: 32),
                 if (canManage)
                   Row(
                     children: [
                       OutlinedButton.icon(
-                        onPressed: () => context.go('/projects/${project.id}/edit'),
+                        onPressed: () =>
+                            context.go('/projects/${project.id}/edit'),
                         icon: const Icon(Icons.edit_outlined),
                         label: const Text('Edit'),
                       ),
-                      const SizedBox(width: 12),
-                      if (isAdmin)
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                          onPressed: () => _confirmDelete(context, ref, project.id, project.name),
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('Delete'),
-                        ),
                     ],
                   ),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, WidgetRef ref, String projectId, String projectName) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Project'),
-        content: Text('Are you sure you want to delete "$projectName"? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              Navigator.of(dialogContext).pop();
-              await ref.read(projectServiceProvider).deleteProject(projectId);
-              if (context.mounted) context.go('/projects');
-            },
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }
@@ -115,7 +105,10 @@ class _DetailRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          Text(
+            label,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          ),
           const SizedBox(height: 4),
           Text(value, style: Theme.of(context).textTheme.bodyLarge),
         ],

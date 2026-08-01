@@ -72,8 +72,21 @@ class _EmployeeDetailScreenState extends ConsumerState<EmployeeDetailScreen> {
       padding: const EdgeInsets.all(24),
       child: employeeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) =>
-            Center(child: Text('Failed to load employee: $err')),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Failed to load employee: $err'),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    ref.invalidate(employeeByIdProvider(widget.uid)),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
         data: (employee) {
           if (employee == null) {
             return const Center(child: Text('Employee not found.'));

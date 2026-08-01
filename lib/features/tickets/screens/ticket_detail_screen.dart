@@ -71,8 +71,21 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       padding: const EdgeInsets.all(24),
       child: ticketAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) =>
-            Center(child: Text('Failed to load ticket: $err')),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Failed to load ticket: $err'),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    ref.invalidate(ticketByIdProvider(widget.ticketId)),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
         data: (ticket) {
           if (ticket == null) {
             return const Center(child: Text('Ticket not found.'));
@@ -258,7 +271,20 @@ class _AssignEngineerSection extends ConsumerWidget {
 
     return engineersAsync.when(
       loading: () => const LinearProgressIndicator(),
-      error: (err, stack) => Text('Failed to load engineers: $err'),
+      error: (err, stack) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Failed to load engineers: $err'),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => ref.invalidate(activeEngineersProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
       data: (engineers) {
         final matches = engineers.where((e) => e['uid'] == currentAssigneeUid);
         final currentValue = matches.isNotEmpty ? matches.first : null;

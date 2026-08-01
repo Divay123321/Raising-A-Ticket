@@ -44,33 +44,55 @@ class TicketListScreen extends ConsumerWidget {
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  onChanged: (value) => ref.read(ticketSearchQueryProvider.notifier).state = value,
+                  onChanged: (value) =>
+                      ref.read(ticketSearchQueryProvider.notifier).state =
+                          value,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<TicketStatus?>(
-                  decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
                   value: ref.watch(ticketStatusFilterProvider),
                   hint: const Text('All statuses'),
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('All statuses')),
-                    ...TicketStatus.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label))),
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('All statuses'),
+                    ),
+                    ...TicketStatus.values.map(
+                      (s) => DropdownMenuItem(value: s, child: Text(s.label)),
+                    ),
                   ],
-                  onChanged: (value) => ref.read(ticketStatusFilterProvider.notifier).state = value,
+                  onChanged: (value) =>
+                      ref.read(ticketStatusFilterProvider.notifier).state =
+                          value,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<TicketPriority?>(
-                  decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
                   value: ref.watch(ticketPriorityFilterProvider),
                   hint: const Text('All priorities'),
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('All priorities')),
-                    ...TicketPriority.values.map((p) => DropdownMenuItem(value: p, child: Text(p.label))),
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('All priorities'),
+                    ),
+                    ...TicketPriority.values.map(
+                      (p) => DropdownMenuItem(value: p, child: Text(p.label)),
+                    ),
                   ],
-                  onChanged: (value) => ref.read(ticketPriorityFilterProvider.notifier).state = value,
+                  onChanged: (value) =>
+                      ref.read(ticketPriorityFilterProvider.notifier).state =
+                          value,
                 ),
               ),
               const SizedBox(width: 12),
@@ -79,14 +101,25 @@ class TicketListScreen extends ConsumerWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                   data: (projects) => DropdownButtonFormField<String?>(
-                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
                     value: ref.watch(ticketProjectFilterProvider),
                     hint: const Text('All projects'),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All projects')),
-                      ...projects.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))),
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All projects'),
+                      ),
+                      ...projects.map(
+                        (p) =>
+                            DropdownMenuItem(value: p.id, child: Text(p.name)),
+                      ),
                     ],
-                    onChanged: (value) => ref.read(ticketProjectFilterProvider.notifier).state = value,
+                    onChanged: (value) =>
+                        ref.read(ticketProjectFilterProvider.notifier).state =
+                            value,
                   ),
                 ),
               ),
@@ -96,10 +129,28 @@ class TicketListScreen extends ConsumerWidget {
           Expanded(
             child: ticketsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('Failed to load tickets: $err')),
+              error: (err, stack) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Failed to load tickets: $err'),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => ref.invalidate(ticketListProvider),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
               data: (tickets) {
                 if (tickets.isEmpty) {
-                  return const Center(child: Text('No tickets found.', style: TextStyle(color: Colors.grey)));
+                  return const Center(
+                    child: Text(
+                      'No tickets found.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
                 }
                 return SingleChildScrollView(
                   child: DataTable(
@@ -113,10 +164,17 @@ class TicketListScreen extends ConsumerWidget {
                     rows: tickets.map((ticket) {
                       return DataRow(
                         cells: [
-                          DataCell(Text(ticket.title), onTap: () => context.go('/tickets/${ticket.id}')),
+                          DataCell(
+                            Text(ticket.title),
+                            onTap: () => context.go('/tickets/${ticket.id}'),
+                          ),
                           DataCell(Text(ticket.projectName)),
-                          DataCell(Text(ticket.assignedEngineerName ?? 'Unassigned')),
-                          DataCell(TicketPriorityChip(priority: ticket.priority)),
+                          DataCell(
+                            Text(ticket.assignedEngineerName ?? 'Unassigned'),
+                          ),
+                          DataCell(
+                            TicketPriorityChip(priority: ticket.priority),
+                          ),
                           DataCell(TicketStatusChip(status: ticket.status)),
                         ],
                       );

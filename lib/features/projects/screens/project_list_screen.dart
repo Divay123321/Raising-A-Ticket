@@ -14,7 +14,7 @@ class ProjectListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projectsAsync = ref.watch(filteredProjectListProvider);
     final userAsync = ref.watch(currentUserProvider);
-    final canManage = userAsync.value?.role == UserRole.admin || userAsync.value?.role == UserRole.projectManager;
+    final isAdmin = userAsync.value?.role == UserRole.admin;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -23,9 +23,12 @@ class ProjectListScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('Projects', style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                'Projects',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const Spacer(),
-              if (canManage)
+              if (isAdmin)
                 FilledButton.icon(
                   onPressed: () => context.go('/projects/new'),
                   icon: const Icon(Icons.add),
@@ -45,22 +48,32 @@ class ProjectListScreen extends ConsumerWidget {
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  onChanged: (value) => ref.read(projectSearchQueryProvider.notifier).state = value,
+                  onChanged: (value) =>
+                      ref.read(projectSearchQueryProvider.notifier).state =
+                          value,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<ProjectStatus?>(
-                  decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
                   value: ref.watch(projectStatusFilterProvider),
                   hint: const Text('All statuses'),
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('All statuses')),
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('All statuses'),
+                    ),
                     ...ProjectStatus.values.map(
                       (s) => DropdownMenuItem(value: s, child: Text(s.label)),
                     ),
                   ],
-                  onChanged: (value) => ref.read(projectStatusFilterProvider.notifier).state = value,
+                  onChanged: (value) =>
+                      ref.read(projectStatusFilterProvider.notifier).state =
+                          value,
                 ),
               ),
             ],
@@ -69,10 +82,28 @@ class ProjectListScreen extends ConsumerWidget {
           Expanded(
             child: projectsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('Failed to load projects: $err')),
+              error: (err, stack) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Failed to load projects: $err'),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => ref.invalidate(projectListProvider),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
               data: (projects) {
                 if (projects.isEmpty) {
-                  return const Center(child: Text('No projects found.', style: TextStyle(color: Colors.grey)));
+                  return const Center(
+                    child: Text(
+                      'No projects found.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
                 }
                 return SingleChildScrollView(
                   child: DataTable(
@@ -85,7 +116,10 @@ class ProjectListScreen extends ConsumerWidget {
                     rows: projects.map((project) {
                       return DataRow(
                         cells: [
-                          DataCell(Text(project.name), onTap: () => context.go('/projects/${project.id}')),
+                          DataCell(
+                            Text(project.name),
+                            onTap: () => context.go('/projects/${project.id}'),
+                          ),
                           DataCell(Text(project.client)),
                           DataCell(Text(project.managerName)),
                           DataCell(ProjectStatusChip(status: project.status)),

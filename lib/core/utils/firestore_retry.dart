@@ -9,8 +9,9 @@ Stream<T> withRetry<T>(Stream<T> Function() streamBuilder) async* {
       return;
     } catch (e) {
       attempt++;
-      if (attempt >= 3) rethrow;
-      await Future.delayed(Duration(milliseconds: 400 * attempt));
+      if (attempt >= 4) rethrow; // was 3
+      await Future.delayed(Duration(milliseconds: 500 * attempt)); // was 400
     }
   }
 }
+

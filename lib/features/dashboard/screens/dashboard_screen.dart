@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/enums/user_role.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../providers/dashboard_providers.dart';
 import '../widgets/stat_card.dart';
@@ -121,6 +122,31 @@ class _DashboardContentState extends ConsumerState<_DashboardContent> {
                     value: stats.closedTicketCount,
                     icon: Icons.check_circle_outline,
                   ),
+                ),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final currentUser = ref.watch(currentUserProvider).value;
+                    if (currentUser?.role != UserRole.engineer) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final myTicketsAsync = ref.watch(myTicketCountProvider);
+                    return myTicketsAsync.when(
+                      loading: () => const SizedBox(
+                        width: 240,
+                        child: Card(child: SizedBox(height: 76)),
+                      ),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (count) => SizedBox(
+                        width: 240,
+                        child: StatCard(
+                          label: 'My Tickets',
+                          value: count,
+                          icon: Icons.assignment_ind_outlined,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

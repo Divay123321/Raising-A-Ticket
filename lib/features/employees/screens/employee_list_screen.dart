@@ -63,8 +63,20 @@ class EmployeeListScreen extends ConsumerWidget {
           Expanded(
             child: employeesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) =>
-                  Center(child: Text('Failed to load employees: $err')),
+              error: (err, stack) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Failed to load employees: $err'),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => ref.invalidate(employeeListProvider),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
               data: (employees) {
                 if (employees.isEmpty) {
                   return const Center(
