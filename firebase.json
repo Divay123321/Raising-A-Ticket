@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"filoi-ops-portal","appId":"1:665333224651:android:51ce16ab5f6e201211b74e","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"filoi-ops-portal","configurations":{"android":"1:665333224651:android:51ce16ab5f6e201211b74e","ios":"1:665333224651:ios:012d5528265c1f0f11b74e","macos":"1:665333224651:ios:012d5528265c1f0f11b74e","web":"1:665333224651:web:8d2e4ed6c05ea6f211b74e","windows":"1:665333224651:web:0c9db777967b4d7711b74e"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "filoi-ops-portal",
+          "appId": "1:665333224651:android:51ce16ab5f6e201211b74e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "filoi-ops-portal",
+          "configurations": {
+            "android": "1:665333224651:android:51ce16ab5f6e201211b74e",
+            "ios": "1:665333224651:ios:012d5528265c1f0f11b74e",
+            "macos": "1:665333224651:ios:012d5528265c1f0f11b74e",
+            "web": "1:665333224651:web:8d2e4ed6c05ea6f211b74e",
+            "windows": "1:665333224651:web:0c9db777967b4d7711b74e"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
