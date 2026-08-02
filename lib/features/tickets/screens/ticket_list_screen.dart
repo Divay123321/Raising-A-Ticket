@@ -1,3 +1,4 @@
+// lib/features/tickets/screens/ticket_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,19 +52,20 @@ class TicketListScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
+
+          SearchField(
+            hint: 'Search by title...',
+            onChanged: (value) =>
+                ref.read(ticketSearchQueryProvider.notifier).state = value,
+          ),
+          const SizedBox(height: 12),
+
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              Expanded(
-                flex: 2,
-                child: SearchField(
-                  hint: 'Search by title...',
-                  onChanged: (value) =>
-                      ref.read(ticketSearchQueryProvider.notifier).state =
-                          value,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: 180,
                 child: FilterDropdown<TicketStatus?>(
                   value: ref.watch(ticketStatusFilterProvider),
                   hint: 'All statuses',
@@ -81,8 +83,8 @@ class TicketListScreen extends ConsumerWidget {
                           value,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: 180,
                 child: FilterDropdown<TicketPriority?>(
                   value: ref.watch(ticketPriorityFilterProvider),
                   hint: 'All priorities',
@@ -100,8 +102,8 @@ class TicketListScreen extends ConsumerWidget {
                           value,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: 180,
                 child: projectsAsync.when(
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
@@ -126,6 +128,7 @@ class TicketListScreen extends ConsumerWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 20),
           Expanded(
             child: ticketsAsync.when(
