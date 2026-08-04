@@ -1,5 +1,3 @@
-> Written as a personal engineering log while building this project — decisions, bugs, and lessons, kept honest rather than polished.
-
 # Engineering Notes — Filoi Enterprise Operations Portal
 
 Internal reference doc, not part of the public README. Written to prep for questions about this project — decisions made, bugs hit and fixed, and concepts learned. Organized so each entry can stand alone as an interview answer.
@@ -30,7 +28,16 @@ Some actions share the same underlying Firestore operation (`update()`) but need
 Employee data (name, email, role, skills) is identical to what's already stored in `users/{uid}` for auth purposes. A second collection would mean syncing two sources of truth for the same person. `EmployeeService` reads/writes `users` directly, reusing the existing `AppUser` model — a deliberate "not everything needs new schema" decision.
 
 ### Why no explicit "team members" field on Project
-Considered adding `teamMemberUids` to the Project schema, then intentionally avoided it — a project's active team is fully derivable from "which engineers currently hold tickets under this project," so a stored field would just be a second, syncable source of truth for something already computable.
+Considered adding `teamMemberUids` to the Project schema, then intentionally avoided it — a project's active team is fully derivable from "which engineers currently hold tickets under this project," so a stored field would just be a second, syncable source of truth for something already computable. Built as `projectTeamProvider`: a derived provider watching the raw ticket stream, filtering by `projectId`, and deduping by `assignedEngineerUid` via a `Map<uid, name>` (map keys naturally collapse duplicates — cheaper than writing manual dedup logic).
+
+### Why the audit trail logs at the service layer, not the UI layer
+`_logActivity()` is called from inside `TicketService`/`ProjectService`/`EmployeeService`'s own mutation methods (`createTicket`, `updateProject`, `updateEmployee`), not from the screens that call them. This guarantees every mutation is logged regardless of which UI eventually triggers it — if a future screen calls `updateProject()`, the audit entry happens automatically, rather than depending on every caller remembering to log it separately.
+
+### Why the combined Activity feed uses an N+1 fan-out read instead of a shared log collection
+The feed needs to merge Project + Ticket + Employee activity into one chronological list, scoped by role (Admin sees everything; PM sees only their own projects/tickets/team). Rather than maintaining a separate top-level `activityFeed` collection written to by every logging call (the more scalable design), the feed provider fetches each *visible* project/ticket/employee's existing `activity` subcollection directly and merges the results client-side. This is a deliberate, named trade-off: simpler to build and reason about, correct at this app's actual scale (a handful of projects/tickets), but would need re-architecting (a shared, append-only log collection) before it'd hold up at real enterprise scale with hundreds of projects. Worth stating plainly in an interview: I know this doesn't scale indefinitely, and I know what the fix would look like.
+
+### Why Project/Employee activity logging reuses Ticket's `ActivityEntry` model
+Rather than defining separate `ProjectActivityEntry`/`EmployeeActivityEntry` models, all three features share one `ActivityEntry` (`type`, `actorUid`, `actorName`, `detail`, `timestamp`) from the `tickets` feature folder. The shape is identical across all three use cases; a duplicate model would just be copy-pasted fields with no behavioral difference. `ActivityType.fromValue()` deliberately falls back to a default (`edited`) on an unrecognized value rather than throwing — informational/historical data should degrade gracefully, unlike `UserRole`/`TicketStatus`, which throw on bad data since those drive real permission decisions where guessing wrong would be dangerous.
 
 ---
 
@@ -68,7 +75,18 @@ Considered adding `teamMemberUids` to the Project schema, then intentionally avo
 **Root cause:** Dashboard stats used a one-time `FutureProvider` aggregate count (deliberate, to avoid a "stats doc out of sync" bug class) — but nothing ever told it to refetch after the first load.
 **Fix:** `ref.invalidate(dashboardStatsProvider)` inside `initState()` (via `Future.microtask` to avoid a "setState during build" error) forces a fresh fetch every time the Dashboard screen is actually visited.
 
-### 7. Duplicate/malformed YAML and Firestore Rules files
+### 7. Hot reload silently failing to apply a structural widget-tree change
+**Symptom:** Added a new `Container` section to a screen's `Column`; code was correct and confirmed present on review, but nothing new appeared on screen.
+**Root cause:** Flutter's hot reload reliably picks up small changes (text, logic, colors) but can be inconsistent with larger structural insertions into an existing widget tree — a known limitation, not a bug in the code itself.
+**Fix:** Hot *restart* (capital `R` in the terminal, or fully stopping and re-running `flutter run`), which rebuilds the entire app state from scratch rather than attempting an incremental patch. Now the default response to "this should be here but isn't."
+
+### 8. A route defined outside its intended `ShellRoute` — silently losing shared layout and theming
+**Symptom:** Added a new `/activity` page; the sidebar and app-wide styling disappeared only on that one route, and text rendered with unexpected default sizing.
+**Root cause:** The new `GoRoute` was added as a sibling of `ShellRoute` rather than nested inside its `routes: [...]` list — an easy mistake given `go_router`'s nested route syntax. Being outside the shell meant the page didn't render through `AppShell` (no sidebar) and lost the styling context every other screen gets by being inside that shared subtree.
+**Fix:** Moved the `GoRoute` inside `ShellRoute`'s `routes` array, alongside the other shell-wrapped pages.
+**Lesson:** When adding a new route, always double-check its nesting level against the routes it's meant to share layout with — a route "existing" and a route "being wrapped by the right shell" are two different things that can silently diverge.
+
+### 9. Duplicate/malformed YAML and Firestore Rules files
 **Symptom:** `pubspec.yaml` had two `dev_dependencies:` blocks (second silently overriding/conflicting with the first); Firestore Rules file was accidentally pasted twice, nested inside itself.
 **Lesson:** Both are the same underlying mistake — copy-pasting a full block into a file that already had that block, without checking for duplication first. Worth a visual scan of top-level keys/braces before publishing config files.
 

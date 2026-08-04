@@ -1,5 +1,7 @@
 # Filoi Enterprise Operations Portal
 
+**Live demo:** https://filoi-ops-portal.web.app
+
 An internal enterprise operations portal for managing projects, employees, and support tickets — built as a realistic internal tool that a company like Filoi (DHIS2 / Health Information Systems / IT services) could plausibly run internally.
 
 This is a portfolio/internship project, **not** an attempt to recreate any real Filoi system.
@@ -24,6 +26,8 @@ This is a portfolio/internship project, **not** an attempt to recreate any real 
 - **Projects** — searchable/filterable list, Admin-only creation, edit restricted to Admin or the assigned Manager, no deletion (projects are marked `Completed` instead — see Design Decisions).
 - **Employees** — Admin-only directory built directly on the `users` collection (no separate schema); role assignment, account activation, and a skills tag editor.
 - **Tickets** — the core feature: searchable/filterable list (role-scoped visibility), full create/edit, dedicated Assign Engineer and Change Status actions, a comment thread, and a visual Activity Timeline logging every mutation automatically.
+- **Project Team view** — a derived, read-only list of engineers currently working a project, inferred from live ticket assignments rather than a stored field, so it's always accurate with zero extra data entry.
+- **Audit trail** — Projects, Employees, and Tickets each log a per-record activity history (who changed what, when), plus a combined, role-scoped **Activity** feed: Admins see activity across the whole company, Project Managers see activity scoped to the projects, tickets, and team members under their own management.
 - **Security** — every permission is enforced server-side via Firestore Security Rules, including field-level restrictions (e.g. an Engineer can change a ticket's status but not its title), not just hidden UI buttons.
 - **Resilience** — Firebase Web's auth-token propagation timing gap is handled with automatic silent retries on live data streams, and manual Retry actions surface if a genuine issue persists.
 - **Automated tests** — service-layer unit tests using `fake_cloud_firestore`, covering ticket creation, status changes, and activity-log side effects.
@@ -158,9 +162,12 @@ flutter test
 | Projects (list/detail/edit, Admin-gated create, no delete) | ✅ Complete |
 | Employees (directory, activation, role/skills management) | ✅ Complete |
 | Tickets (CRUD, assignment, status, comments, activity timeline) | ✅ Complete |
+| Project Team view (derived from ticket assignments) | ✅ Complete |
+| Audit trail (Projects, Employees, Tickets) + combined Activity feed | ✅ Complete |
 | Automated tests | ✅ Core service coverage complete |
 | Manual QA pass (all three roles) | ✅ Complete |
-| Deployment |  ✅ Complete |
+| Visual design system (branded auth, dashboard, sidebar, list/detail screens) | ✅ Complete |
+| Deployment (Firebase Hosting) | ✅ Live at https://filoi-ops-portal.web.app |
 
 ---
 
@@ -170,6 +177,8 @@ flutter test
 - **Comments and activity log as subcollections** of `tickets/{id}`, not arrays on the ticket document — avoids the 1MB document cap and allows independent pagination.
 - **Dashboard counts** use Firestore's aggregate `.count()` queries rather than a maintained stats document, avoiding a class of "aggregate doc out of sync" bugs at the cost of slightly more read operations — an acceptable tradeoff at this app's scale.
 - **Projects are never deleted.** Every ticket references a project by ID; deleting a project would orphan its tickets' historical references. A project that's finished simply moves to `Completed` status instead, preserving a permanent record.
+- **Project team membership is derived, not stored.** Rather than a `teamMemberUids` field on Project (a second source of truth that could drift out of sync), the team shown on Project Detail is computed live from "which engineers currently hold tickets under this project" — zero schema cost, always accurate.
+- **The combined Activity feed trades read-efficiency for simplicity.** It fans out to fetch each visible project's, ticket's, and employee's `activity` subcollection individually (an N+1 read pattern) rather than maintaining a separate top-level activity-log collection. Acceptable at this app's scale (a small internal team); a higher-scale version would write every log entry to one shared collection instead, avoiding the fan-out at read time.
 - **Firebase Web auth-token propagation gap.** Right after login (or a background token refresh), Firestore reads can briefly fail even though the security rules would correctly allow them a moment later. A shared `withRetry()` helper wraps every live Firestore stream with a short, silent retry (up to ~3 attempts) before surfacing a real error with a manual Retry action — avoiding both a confusing false error on login and an infinite silent retry that would mask a genuine problem.
 
 ## Possible Future Improvements
