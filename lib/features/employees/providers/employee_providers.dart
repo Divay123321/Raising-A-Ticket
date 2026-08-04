@@ -3,6 +3,7 @@ import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/enums/user_role.dart';
 import '../../auth/models/app_user.dart';
 import '../services/employee_service.dart';
+import '../../tickets/models/activity_entry.dart';
 
 final employeeServiceProvider = Provider<EmployeeService>((ref) {
   return EmployeeService(firestore: ref.watch(firestoreProvider));
@@ -31,4 +32,9 @@ final filteredEmployeeListProvider = Provider<AsyncValue<List<AppUser>>>((ref) {
       return matchesQuery && matchesRole;
     }).toList();
   });
+});
+
+
+final employeeActivityProvider = StreamProvider.family<List<ActivityEntry>, String>((ref, uid) {
+  return ref.watch(employeeServiceProvider).watchActivity(uid);
 });

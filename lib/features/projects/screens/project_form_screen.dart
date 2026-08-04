@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/enums/project_status.dart';
 import '../models/project.dart';
 import '../providers/project_providers.dart';
+import '../../auth/providers/auth_providers.dart';
 
 class ProjectFormScreen extends ConsumerStatefulWidget {
   final Project? existingProject; // null = create mode, non-null = edit mode
@@ -71,11 +72,23 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
     );
 
     try {
+      final currentUser = ref.read(currentUserProvider).value;
+      if (currentUser == null) return;
+
       final service = ref.read(projectServiceProvider);
       if (_isEditMode) {
-        await service.updateProject(widget.existingProject!.id, project);
+        await service.updateProject(
+          widget.existingProject!.id,
+          project,
+          actorUid: currentUser.uid,
+          actorName: currentUser.name,
+        );
       } else {
-        await service.createProject(project);
+        await service.createProject(
+          project,
+          actorUid: currentUser.uid,
+          actorName: currentUser.name,
+        );
       }
       if (mounted) context.go('/projects');
     } catch (e) {

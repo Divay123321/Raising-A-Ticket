@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/enums/user_role.dart';
 import '../../../shared/widgets/lists/error_state.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../tickets/models/activity_entry.dart';
 import '../providers/project_providers.dart';
 import '../widgets/project_status_chip.dart';
 
@@ -65,6 +66,8 @@ class ProjectDetailScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
+
+                // Info card
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -108,6 +111,203 @@ class ProjectDetailScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+
+                const SizedBox(height: 16),
+
+                // Team card — derived from ticket assignments, no stored field
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'TEAM',
+                        style: TextStyle(
+                          color: AppColors.slate,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Builder(
+                        builder: (context) {
+                          final teamAsync = ref.watch(
+                            projectTeamProvider(project.id),
+                          );
+                          return teamAsync.when(
+                            loading: () => const LinearProgressIndicator(
+                              color: AppColors.teal,
+                            ),
+                            error: (_, __) => Row(
+                              children: [
+                                const Text(
+                                  'Failed to load team.',
+                                  style: TextStyle(
+                                    color: AppColors.slate,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  onPressed: () => ref.invalidate(
+                                    projectTeamProvider(project.id),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                  ),
+                                  child: const Text(
+                                    'Retry',
+                                    style: TextStyle(
+                                      color: AppColors.teal,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            data: (team) {
+                              if (team.isEmpty) {
+                                return const Text(
+                                  'No engineers currently assigned to tickets on this project.',
+                                  style: TextStyle(
+                                    color: AppColors.slate,
+                                    fontSize: 13,
+                                  ),
+                                );
+                              }
+                              return Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: team.map((member) {
+                                  return Chip(
+                                    avatar: CircleAvatar(
+                                      backgroundColor: AppColors.teal
+                                          .withValues(alpha: 0.2),
+                                      child: Text(
+                                        member['name']!.isNotEmpty
+                                            ? member['name']![0].toUpperCase()
+                                            : '?',
+                                        style: const TextStyle(
+                                          color: AppColors.teal,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    label: Text(member['name']!),
+                                    backgroundColor: AppColors.parchment,
+                                    side: BorderSide.none,
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Activity card
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'ACTIVITY',
+                        style: TextStyle(
+                          color: AppColors.slate,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Builder(
+                        builder: (context) {
+                          final activityAsync = ref.watch(
+                            projectActivityProvider(project.id),
+                          );
+                          return activityAsync.when(
+                            loading: () => const LinearProgressIndicator(
+                              color: AppColors.teal,
+                            ),
+                            error: (_, __) => Row(
+                              children: [
+                                const Text(
+                                  'Failed to load activity.',
+                                  style: TextStyle(
+                                    color: AppColors.slate,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  onPressed: () => ref.invalidate(
+                                    projectActivityProvider(project.id),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                  ),
+                                  child: const Text(
+                                    'Retry',
+                                    style: TextStyle(
+                                      color: AppColors.teal,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            data: (entries) {
+                              if (entries.isEmpty) {
+                                return const Text(
+                                  'No activity yet.',
+                                  style: TextStyle(
+                                    color: AppColors.slate,
+                                    fontSize: 13,
+                                  ),
+                                );
+                              }
+                              return _ProjectActivityList(entries: entries);
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 20),
                 if (canManage)
                   OutlinedButton.icon(
@@ -127,6 +327,109 @@ class ProjectDetailScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _ProjectActivityList extends StatelessWidget {
+  final List<ActivityEntry> entries;
+  const _ProjectActivityList({required this.entries});
+
+  IconData _iconFor(ActivityType type) => switch (type) {
+    ActivityType.created => Icons.add_circle_outline,
+    ActivityType.edited => Icons.edit_outlined,
+    ActivityType.statusChanged => Icons.sync_alt,
+    ActivityType.assigned => Icons.person_add_alt_outlined,
+  };
+
+  Color _colorFor(ActivityType type) => switch (type) {
+    ActivityType.created => Colors.green,
+    ActivityType.edited => Colors.blueGrey,
+    ActivityType.statusChanged => Colors.orange,
+    ActivityType.assigned => Colors.blue,
+  };
+
+  String _relativeTime(DateTime? timestamp) {
+    if (timestamp == null) return '';
+    final diff = DateTime.now().difference(timestamp);
+    if (diff.inSeconds < 60) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: entries.asMap().entries.map((indexed) {
+        final index = indexed.key;
+        final e = indexed.value;
+        final isLast = index == entries.length - 1;
+        final color = _colorFor(e.type);
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(_iconFor(e.type), size: 14, color: color),
+                  ),
+                  if (!isLast)
+                    Expanded(
+                      child: Container(width: 2, color: Colors.grey.shade300),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          style: DefaultTextStyle.of(context).style,
+                          children: [
+                            TextSpan(
+                              text: e.actorName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' ${e.detail}',
+                              style: const TextStyle(color: AppColors.ink),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _relativeTime(e.timestamp),
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

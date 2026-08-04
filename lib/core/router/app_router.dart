@@ -16,6 +16,7 @@ import '../../features/tickets/screens/ticket_list_screen.dart';
 import '../../features/tickets/screens/ticket_form_screen.dart';
 import '../../features/tickets/screens/ticket_detail_screen.dart';
 import '../../features/tickets/screens/ticket_edit_loarder.dart';
+import '../../features/activity/screens/activity_feed_screen.dart';
 
 class GoRouterRefreshNotifier extends ChangeNotifier {
   void refresh() => notifyListeners();
@@ -55,6 +56,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
+          GoRoute(
+            path: '/activity',
+            builder: (context, state) => const ActivityFeedScreen(),
+          ),
           GoRoute(
             path: '/',
             builder: (context, state) => const DashboardScreen(),

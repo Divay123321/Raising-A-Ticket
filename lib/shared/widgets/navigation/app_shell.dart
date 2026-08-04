@@ -16,11 +16,16 @@ class AppShell extends ConsumerWidget {
     final isAdmin = userAsync.value?.role == UserRole.admin;
     final currentPath = GoRouterState.of(context).matchedLocation;
 
+    final isAdminOrPM =
+        userAsync.value?.role == UserRole.admin ||
+        userAsync.value?.role == UserRole.projectManager;
+
     final navItems = [
       _NavItem('/', 'Dashboard', Icons.dashboard_outlined),
       _NavItem('/projects', 'Projects', Icons.folder_outlined),
       if (isAdmin) _NavItem('/employees', 'Employees', Icons.people_outline),
       _NavItem('/tickets', 'Tickets', Icons.confirmation_number_outlined),
+      if (isAdminOrPM) _NavItem('/activity', 'Activity', Icons.history),
     ];
 
     final selectedIndex = navItems.indexWhere(
@@ -57,12 +62,16 @@ class AppShell extends ConsumerWidget {
           appBar: AppBar(
             backgroundColor: AppColors.ink,
             foregroundColor: Colors.white,
-            title: const Text('FILOI', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 3, fontSize: 16)),
+            title: const Text(
+              'FILOI',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 3,
+                fontSize: 16,
+              ),
+            ),
           ),
-          drawer: Drawer(
-            backgroundColor: AppColors.ink,
-            child: sidebarContent,
-          ),
+          drawer: Drawer(backgroundColor: AppColors.ink, child: sidebarContent),
           body: child,
         );
       },
@@ -96,14 +105,24 @@ class _SidebarContent extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(20, 28, 20, 4),
             child: Text(
               'FILOI',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 3),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 3,
+              ),
             ),
           ),
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Text(
               'OPS PORTAL',
-              style: TextStyle(color: AppColors.teal, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 2),
+              style: TextStyle(
+                color: AppColors.teal,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+              ),
             ),
           ),
           userAsync.when(
@@ -111,7 +130,10 @@ class _SidebarContent extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               child: Text(
                 user?.name ?? '',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 13,
+                ),
               ),
             ),
             loading: () => const SizedBox.shrink(),
@@ -127,28 +149,45 @@ class _SidebarContent extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
               child: Material(
-                color: isSelected ? AppColors.teal.withValues(alpha: 0.15) : Colors.transparent,
+                color: isSelected
+                    ? AppColors.teal.withValues(alpha: 0.15)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(8),
                   onTap: () {
                     // Close the drawer first if we're in mobile mode (Navigator.pop
                     // is a no-op / harmless if there's no drawer open, e.g. wide layout).
-                    if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
+                    if (Scaffold.of(context).isDrawerOpen) {
+                      Navigator.of(context).pop();
+                    }
                     onNavigate(item.path);
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     child: Row(
                       children: [
-                        Icon(item.icon, size: 20, color: isSelected ? AppColors.teal : Colors.white.withValues(alpha: 0.7)),
+                        Icon(
+                          item.icon,
+                          size: 20,
+                          color: isSelected
+                              ? AppColors.teal
+                              : Colors.white.withValues(alpha: 0.7),
+                        ),
                         const SizedBox(width: 12),
                         Text(
                           item.label,
                           style: TextStyle(
-                            color: isSelected ? AppColors.teal : Colors.white.withValues(alpha: 0.85),
+                            color: isSelected
+                                ? AppColors.teal
+                                : Colors.white.withValues(alpha: 0.85),
                             fontSize: 14,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                           ),
                         ),
                       ],
@@ -169,12 +208,25 @@ class _SidebarContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 onTap: onSignOut,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.logout, size: 20, color: Colors.white.withValues(alpha: 0.7)),
+                      Icon(
+                        Icons.logout,
+                        size: 20,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
                       const SizedBox(width: 12),
-                      Text('Sign out', style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 14)),
+                      Text(
+                        'Sign out',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 14,
+                        ),
+                      ),
                     ],
                   ),
                 ),

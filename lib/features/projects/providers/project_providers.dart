@@ -3,6 +3,8 @@ import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/enums/project_status.dart';
 import '../models/project.dart';
 import '../services/project_service.dart';
+import '../../tickets/providers/ticket_providers.dart';
+import '../../tickets/models/activity_entry.dart';
 
 final projectServiceProvider = Provider<ProjectService>((ref) {
   return ProjectService(firestore: ref.watch(firestoreProvider));
@@ -54,3 +56,30 @@ final projectByIdProvider = StreamProvider.family<Project?, String>((
 ) {
   return ref.watch(projectServiceProvider).watchProjectById(projectId);
 });
+
+final projectTeamProvider =
+    Provider.family<AsyncValue<List<Map<String, String>>>, String>((
+      ref,
+      projectId,
+    ) {
+      final ticketsAsync = ref.watch(ticketListProvider);
+
+      return ticketsAsync.whenData((tickets) {
+        final teamMap = <String, String>{}; // uid -> name, deduped
+        for (final ticket in tickets) {
+          if (ticket.projectId == projectId &&
+              ticket.assignedEngineerUid != null) {
+            teamMap[ticket.assignedEngineerUid!] =
+                ticket.assignedEngineerName ?? 'Unknown';
+          }
+        }
+        return teamMap.entries
+            .map((e) => {'uid': e.key, 'name': e.value})
+            .toList();
+      });
+    });
+
+final projectActivityProvider =
+    StreamProvider.family<List<ActivityEntry>, String>((ref, projectId) {
+      return ref.watch(projectServiceProvider).watchActivity(projectId);
+    });
